@@ -40,33 +40,53 @@ public class NettyClient {
         this.port = port;
     }
 
-    public void start() throws InterruptedException {
-        final EventLoopGroup group = new NioEventLoopGroup();
-        Bootstrap bootstrap = new Bootstrap();
-        bootstrap.group(group)
-                .channel(socketChannelCls)
-                .handler(channelInitializer);
-
-        //发起异步连接请求，绑定连接端口和host信息
-        final ChannelFuture future = bootstrap.connect(host, port)
-                .sync();
-        future.addListener((ChannelFutureListener) arg0 -> {
-            if (!future.isSuccess()) {
-                log.error("netty client start failed", future.cause());
-                //关闭线程组
-                group.shutdownGracefully();
-            }
-            log.info("netty client start success");
-        });
-
-        this.channel = future.channel();
-    }
-
     public Channel getChannel() {
         if (Objects.isNull(channel)) {
             throw new IllegalStateException("netty server never start");
         }
         return channel;
+    }
+
+    public <T> NettyClientStarter<T> createStarter(ChannelOption<T> option, T optionArg) {
+        return new NettyClientStarter<>(this, option, optionArg);
+    }
+
+    @Data
+    public static class NettyClientStarter<T> {
+
+        private NettyClient nettyClient;
+
+        private ChannelOption<T> option;
+        private T optionArg;
+
+        public NettyClientStarter(NettyClient nettyClient, ChannelOption<T> option, T optionArg) {
+            this.nettyClient = nettyClient;
+            this.option = option;
+            this.optionArg = optionArg;
+        }
+
+        public void start() throws InterruptedException {
+            final EventLoopGroup group = new NioEventLoopGroup();
+            Bootstrap bootstrap = new Bootstrap();
+            bootstrap.group(group)
+                    .option(option, optionArg)
+                    .channel(nettyClient.getSocketChannelCls())
+                    .handler(nettyClient.getChannelInitializer());
+
+            //发起异步连接请求，绑定连接端口和host信息
+            final ChannelFuture future = bootstrap.connect(nettyClient.getHost(), nettyClient.getPort())
+                    .sync();
+            future.addListener((ChannelFutureListener) arg0 -> {
+                if (!future.isSuccess()) {
+                    log.error("netty client start failed", future.cause());
+                    //关闭线程组
+                    group.shutdownGracefully();
+                }
+                log.info("netty client start success");
+            });
+
+            this.nettyClient.setChannel(future.channel());
+        }
     }
 }
 

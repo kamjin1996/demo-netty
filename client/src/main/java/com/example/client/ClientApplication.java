@@ -2,6 +2,7 @@ package com.example.client;
 
 import com.example.client.protocol.RpcRequest;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelOption;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -29,7 +30,8 @@ public class ClientApplication implements CommandLineRunner {
     @Async
     @Override
     public void run(String... args) throws Exception {
-        this.nettyClient.start();
+        this.nettyClient.createStarter(ChannelOption.TCP_NODELAY, true)
+                .start();
         Channel channel = nettyClient.getChannel();
         //消息体
         RpcRequest request = new RpcRequest();

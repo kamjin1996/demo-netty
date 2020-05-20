@@ -29,7 +29,8 @@ public class ServerHandler extends SimpleChannelInboundHandler<RpcRequest> {
         response.setId(UUID.randomUUID().toString());
         response.setData("server响应结果");
         response.setCode(200);
-        ctx.writeAndFlush(response + "\n");
+        String separator = System.getProperty("line.separator");//按换行符进行数据的读取,防止拆包粘包问题
+        ctx.writeAndFlush(response + separator);
     }
 
     //通知处理器最后的channelRead()是当前批处理中的最后一条消息时调用
